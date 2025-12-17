@@ -7,13 +7,13 @@ import (
 	"github.com/gitams17/ainyx-assignment/db/sqlc"
 	"github.com/gitams17/ainyx-assignment/internal/models"
 	"github.com/gitams17/ainyx-assignment/internal/repository"
-	"github.com/jackc/pgx/v5/pgtype" // Required for pgtype.Date
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// Fix: ListUsers should return a slice []models.UserResponse, not a single struct
 type UserService interface {
 	CreateUser(ctx context.Context, req models.CreateUserRequest) (*models.UserResponse, error)
 	GetUser(ctx context.Context, id int64) (*models.UserResponse, error)
+	// Change: Return slice []models.UserResponse
 	ListUsers(ctx context.Context, page int32, limit int32) ([]models.UserResponse, error)
 	UpdateUser(ctx context.Context, id int64, req models.UpdateUserRequest) (*models.UserResponse, error)
 	DeleteUser(ctx context.Context, id int64) error
@@ -35,7 +35,6 @@ func CalculateAge(dob time.Time, now time.Time) int {
 	return age
 }
 
-// Helper to convert time.Time to pgtype.Date
 func toPgDate(t time.Time) pgtype.Date {
 	return pgtype.Date{Time: t, Valid: true}
 }
@@ -46,7 +45,6 @@ func (s *userService) CreateUser(ctx context.Context, req models.CreateUserReque
 		return nil, err
 	}
 
-	// Fix: Use helper to convert time.Time to pgtype.Date
 	user, err := s.repo.CreateUser(ctx, db.CreateUserParams{
 		Name: req.Name,
 		Dob:  toPgDate(dob),
@@ -58,7 +56,7 @@ func (s *userService) CreateUser(ctx context.Context, req models.CreateUserReque
 	return &models.UserResponse{
 		ID:   user.ID,
 		Name: user.Name,
-		Dob:  user.Dob.Time.Format("2006-01-02"), // Fix: Access .Time field
+		Dob:  user.Dob.Time.Format("2006-01-02"),
 		Age:  CalculateAge(user.Dob.Time, time.Now()),
 	}, nil
 }
@@ -77,7 +75,7 @@ func (s *userService) GetUser(ctx context.Context, id int64) (*models.UserRespon
 	}, nil
 }
 
-// Fix: Return slice []models.UserResponse
+// Fixed ListUsers function
 func (s *userService) ListUsers(ctx context.Context, page int32, limit int32) ([]models.UserResponse, error) {
 	offset := (page - 1) * limit
 	users, err := s.repo.ListUsers(ctx, db.ListUsersParams{
@@ -88,7 +86,7 @@ func (s *userService) ListUsers(ctx context.Context, page int32, limit int32) ([
 		return nil, err
 	}
 
-	// Fix: Initialize slice
+	// Initialize the slice
 	var response []models.UserResponse
 	for _, u := range users {
 		response = append(response, models.UserResponse{
